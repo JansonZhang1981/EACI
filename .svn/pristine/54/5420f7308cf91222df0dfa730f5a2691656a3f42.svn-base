@@ -1,0 +1,54 @@
+﻿Public Class LoginForm
+
+    ' TODO: 插入代码，以使用提供的用户名和密码执行自定义的身份验证
+    ' (请参见 http://go.microsoft.com/fwlink/?LinkId=35339)。 
+    ' 随后自定义主体可附加到当前线程的主体，如下所示: 
+    '     My.User.CurrentPrincipal = CustomPrincipal
+    ' 其中 CustomPrincipal 是用于执行身份验证的 IPrincipal 实现。
+    ' 随后，My.User 将返回 CustomPrincipal 对象中封装的标识信息
+    ' 如用户名、显示名等
+    Dim MyConnection As Aras.IOM.HttpServerConnection
+    Dim MyInnovator As Aras.IOM.Innovator
+    Private Sub OK_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles OK.Click
+        url = vServer + "/Server/InnovatorServer.aspx"
+        'url = vServer + "/Server"
+        db = "InnovatorSample"
+
+        username = UsernameTextBox.Text
+        pwd = Aras.IOM.Innovator.ScalcMD5(PasswordTextBox.Text)
+        ' pwd = PasswordTextBox.Text
+        Dim fac As New Aras.IOM.IomFactory
+
+        conn = Aras.IOM.IomFactory.CreateHttpServerConnection(url, vDatabase, username, pwd)
+        'conn = fac.CreateHttpServerConnection(url, db, uername, pwd)
+
+        '  Dim login_reslut As Aras.IOM.Item
+
+        login_reslut = conn.Login()
+
+        If login_reslut.isError Then
+            MsgBox("登陆失败，请确认用户密码是否填写正确",, "PLM")
+            loginstatus = False
+            Exit Sub
+        Else
+            MsgBox("登陆成功",, "PLM")
+            loginstatus = True
+            inn = Aras.IOM.IomFactory.CreateInnovator(conn)
+            user = inn.getItemById("User", inn.getUserID)
+            workspace = user.getProperty("working_directory")
+            loginstatus = True
+
+        End If
+        Me.Close()
+        Dim menu As New EACI_MENU
+        menu.Show()
+    End Sub
+
+    Private Sub Cancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Cancel.Click
+        Me.Close()
+    End Sub
+
+    Private Sub LoginForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        initialization()
+    End Sub
+End Class

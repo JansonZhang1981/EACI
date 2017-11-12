@@ -1,0 +1,110 @@
+﻿Module ArasUtil
+    Public Function ModelExist(item_number As String, Type As String) As Aras.IOM.Item
+        Dim CADs As Aras.IOM.Item = inn.newItem()
+        Dim aml As String = "<Item type='CAD' action='get' ><item_number condition='eq'>" + item_number + "</item_number><classification condition='eq'>Mechanical/" & Type & "</classification></Item>"
+        CADs.loadAML(aml)
+        CADs = CADs.apply()
+        Return CADs
+    End Function
+
+    Function Addfile(file As String) As Aras.IOM.Item
+        Dim it As Aras.IOM.Item = Nothing
+        If file <> "" Then
+            Dim fileitem As Aras.IOM.Item = inn.newItem("File", "add")
+            fileitem.setFileName(file)
+            ' fileitem.attachPhysicalFile(file)
+
+            'Dim result As Aras.IOM.Item
+            'result = fileitem.apply()
+            it = fileitem.apply
+
+            ''删除同名的文件关联
+            'Dim f1 As Aras.IOM.Item = inn.newItem("File", "get")
+            'f1.setProperty("filename", result.getProperty("filename"))
+            'f1 = f1.apply()
+            'it = f1
+
+        End If
+        Return it
+    End Function
+    Function Addugfile(file As String) As Aras.IOM.Item
+        Dim it As Aras.IOM.Item = Nothing
+        If file <> "" Then
+            Dim fileitem As Aras.IOM.Item = inn.newItem("File", "add")
+            fileitem.setFileName(file)
+            '  fileitem.attachPhysicalFile(file)
+            fileitem.setProperty("file_type", "FA3ED4A0494C4E92BDCDE8ED18950999") 'UG文件类型，避免和Proe冲突
+
+            'Dim result As Aras.IOM.Item
+            'result = fileitem.apply()
+            it = fileitem.apply
+
+            ''删除同名的文件关联
+            'Dim f1 As Aras.IOM.Item = inn.newItem("File", "get")
+            'f1.setProperty("filename", result.getProperty("filename"))
+            'f1 = f1.apply()
+            'it = f1
+
+        End If
+        Return it
+    End Function
+    Function UpdateUGPart(catobj As ArasObj, CAD As Aras.IOM.Item, thumbnail As Aras.IOM.Item, viewable_file As Aras.IOM.Item, native_file As Aras.IOM.Item) As Aras.IOM.Item
+        '    Dim ConfigItem As System.Xml.XmlDocument = New System.Xml.XmlDocument
+        '    Dim Node As System.Xml.XmlNode
+        '    Dim nodelist As System.Xml.XmlNodeList
+        '    ConfigItem.Load(AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "mapping.xml")
+        '    Node = ConfigItem.SelectSingleNode("//Part")
+        '    nodelist = Node.SelectNodes("attribute")
+
+        '    For Each Node In nodelist
+        '        Dim ugattrname As String = Node.Attributes("ug").Value
+        '        Dim plmattrname As String = Node.Attributes("plm").Value
+        '        '        Dim ugattrvalue As String = readugattr(ugpart, ugattrname)
+        '        CAD.setProperty(plmattrname, ugattrvalue)
+        '    Next
+
+        '    CAD.setAction("version")
+        '    '      CAD.setProperty("is_standard", is_standard)
+        '    CAD.setProperty("thumbnail", "vault:///?fileId=" + thumbnail.getID)  '缩略图
+        '    CAD.setPropertyItem("viewable_file", viewable_file)  '预览文件，file类型
+        '    CAD.setPropertyItem("native_file", native_file)  '源文件,file类型
+        '    CAD.setProperty("authoring_tool", "CATIA")  '编辑工具NX
+        '    CAD.setProperty("authoring_tool_version", catia_version) 
+        '    CAD.setProperty("classification", "Mechanical/NXModel")  'classfication
+        '    Dim y As Aras.IOM.Item = CAD.apply()
+
+        '    y.unlockItem()
+
+        '    Return y
+    End Function
+    Function addCATIADoc(catobject As ArasObj, is_standard As String, thumbnail As Aras.IOM.Item, viewable_file As Aras.IOM.Item, native_file As Aras.IOM.Item) As Aras.IOM.Item
+        Dim CAD As Aras.IOM.Item = Nothing
+
+        Dim item_number As String = ""
+
+        item_number = catobject.PartNumber
+
+        Dim results As Aras.IOM.Item = ModelExist(item_number, catobject.Type)
+        If results.getItemCount <= 0 Then
+            CAD = inn.newItem("CAD", "add")
+
+            CAD.setProperty("item_number", item_number)  '
+            CAD.setProperty("name", catobject.Name)  '
+            CAD.setProperty("Material", catobject.Material)  '
+
+            '      CAD.setProperty("is_standard", is_standard)
+            CAD.setProperty("thumbnail", "vault:///?fileId=" + thumbnail.getID)  '缩略图
+            CAD.setPropertyItem("viewable_file", viewable_file)  '预览文件，file类型
+            CAD.setPropertyItem("native_file", native_file)  '源文件,file类型
+            CAD.setProperty("authoring_tool", "CATIA")  '编辑工具NX
+            CAD.setProperty("authoring_tool_version", catia_version)  '8.5版本
+            CAD.setProperty("classification", "Mechanical/" & catobject.Type)  'classfication
+            CAD = CAD.apply()
+        Else
+            CAD = results.getItemByIndex(0)
+        End If
+        '  MsgBox("5")
+        Return CAD
+
+    End Function
+End Module

@@ -1,0 +1,220 @@
+﻿Module ArasUtil
+    Public Function ModelExist(item_number As String, Type As String) As Aras.IOM.Item
+        Dim CADs As Aras.IOM.Item = inn.newItem()
+        Dim aml As String = "<Item type='CAD' action='get' ><item_number condition='eq'>" + item_number + "</item_number><classification condition='eq'>Mechanical/" & Type & "</classification></Item>"
+        CADs.loadAML(aml)
+        CADs = CADs.apply()
+        Return CADs
+    End Function
+
+    Function Addfile(file As String) As Aras.IOM.Item
+        Dim it As Aras.IOM.Item = Nothing
+        If file <> "" Then
+            Dim fileitem As Aras.IOM.Item = inn.newItem("File", "add")
+            fileitem.setFileName(file)
+            ' fileitem.attachPhysicalFile(file)
+
+            'Dim result As Aras.IOM.Item
+            'result = fileitem.apply()
+            it = fileitem.apply
+
+            ''删除同名的文件关联
+            'Dim f1 As Aras.IOM.Item = inn.newItem("File", "get")
+            'f1.setProperty("filename", result.getProperty("filename"))
+            'f1 = f1.apply()
+            'it = f1
+
+        End If
+        Return it
+    End Function
+    Function Addugfile(file As String) As Aras.IOM.Item
+        Dim it As Aras.IOM.Item = Nothing
+        If file <> "" Then
+            Dim fileitem As Aras.IOM.Item = inn.newItem("File", "add")
+            fileitem.setFileName(file)
+            '  fileitem.attachPhysicalFile(file)
+            fileitem.setProperty("file_type", "FA3ED4A0494C4E92BDCDE8ED18950999") 'UG文件类型，避免和Proe冲突
+
+            'Dim result As Aras.IOM.Item
+            'result = fileitem.apply()
+            it = fileitem.apply
+
+            ''删除同名的文件关联
+            'Dim f1 As Aras.IOM.Item = inn.newItem("File", "get")
+            'f1.setProperty("filename", result.getProperty("filename"))
+            'f1 = f1.apply()
+            'it = f1
+
+        End If
+        Return it
+    End Function
+    Function UpdateUGPart(catobj As ArasObj, CAD As Aras.IOM.Item, thumbnail As Aras.IOM.Item, viewable_file As Aras.IOM.Item, native_file As Aras.IOM.Item) As Aras.IOM.Item
+        '    Dim ConfigItem As System.Xml.XmlDocument = New System.Xml.XmlDocument
+        '    Dim Node As System.Xml.XmlNode
+        '    Dim nodelist As System.Xml.XmlNodeList
+        '    ConfigItem.Load(AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "mapping.xml")
+        '    Node = ConfigItem.SelectSingleNode("//Part")
+        '    nodelist = Node.SelectNodes("attribute")
+
+        '    For Each Node In nodelist
+        '        Dim ugattrname As String = Node.Attributes("ug").Value
+        '        Dim plmattrname As String = Node.Attributes("plm").Value
+        '        '        Dim ugattrvalue As String = readugattr(ugpart, ugattrname)
+        '        CAD.setProperty(plmattrname, ugattrvalue)
+        '    Next
+
+        '    CAD.setAction("version")
+        '    '      CAD.setProperty("is_standard", is_standard)
+        '    CAD.setProperty("thumbnail", "vault:///?fileId=" + thumbnail.getID)  '缩略图
+        '    CAD.setPropertyItem("viewable_file", viewable_file)  '预览文件，file类型
+        '    CAD.setPropertyItem("native_file", native_file)  '源文件,file类型
+        '    CAD.setProperty("authoring_tool", "CATIA")  '编辑工具NX
+        '    CAD.setProperty("authoring_tool_version", catia_version) 
+        '    CAD.setProperty("classification", "Mechanical/NXModel")  'classfication
+        '    Dim y As Aras.IOM.Item = CAD.apply()
+
+        '    y.unlockItem()
+
+        '    Return y
+    End Function
+    Function addCATIADoc(catobject As ArasObj, is_standard As String, thumbnail As Aras.IOM.Item, viewable_file As Aras.IOM.Item, native_file As Aras.IOM.Item) As Aras.IOM.Item
+        Dim CAD As Aras.IOM.Item = Nothing
+
+        Dim item_number As String = ""
+
+        item_number = catobject.PartNumber
+
+        Dim results As Aras.IOM.Item = ModelExist(item_number, catobject.Type)
+        If results.getItemCount <= 0 Then
+            CAD = inn.newItem("CAD", "add")
+
+            CAD.setProperty("item_number", item_number)  '
+            CAD.setProperty("name", catobject.Name)  '
+            CAD.setProperty("Material", catobject.Material)  '
+
+            '      CAD.setProperty("is_standard", is_standard)
+            CAD.setProperty("thumbnail", "vault:///?fileId=" + thumbnail.getID)  '缩略图
+            CAD.setPropertyItem("viewable_file", viewable_file)  '预览文件，file类型
+            CAD.setPropertyItem("native_file", native_file)  '源文件,file类型
+            CAD.setProperty("authoring_tool", "CATIA")  '编辑工具NX
+            CAD.setProperty("authoring_tool_version", catia_version)  '8.5版本
+            CAD.setProperty("classification", "Mechanical/" & catobject.Type)  'classfication
+            CAD = CAD.apply()
+        Else
+            CAD = results.getItemByIndex(0)
+        End If
+        '  MsgBox("5")
+        Return CAD
+
+    End Function
+    Private Function findpart(ByVal th As String) As String
+        Dim part As Aras.IOM.Item = inn.newItem()
+
+        Dim amlstring As String
+        amlstring = "<Item type='Part' action='get'  select='id,item_number' ><item_number condition='eq'>" + th + "</item_number></Item>"
+        part.loadAML(amlstring)
+        Dim results As Aras.IOM.Item = part.apply()
+
+        Dim count As Integer = results.getItemCount()
+        ' MsgBox(count)
+        If count > 0 Then
+            findpart = "借用"
+        Else
+
+            findpart = "新建"
+
+        End If
+
+    End Function
+
+    Private Function partno(ByVal th, ByVal mc) As String
+        Dim gg As String
+        Dim pos As Integer = InStr(1, mc, " ")
+        If pos > 0 Then
+
+            gg = Mid(mc, pos + 1, Len(mc) - pos)
+        Else
+            gg = ""
+        End If
+
+        If gg <> "" Then
+            partno = th + " " + gg
+        Else
+            partno = th
+        End If
+
+    End Function
+
+    Private Function addpart(ByVal th, ByVal mc, ByVal bb, ByVal cl, ByVal lx) As Aras.IOM.Item
+        Dim part As Aras.IOM.Item
+        part = inn.newItem
+        Dim aml As String
+
+
+        aml = "<Item type='Part'  action='add'><item_number>" + th + "</item_number><name>" + mc + "</name><revision>" + bb + "</revision><material>" + cl + "</material><type>" + lx + "</type><classification>Component</classification></Item>"
+        ''aml = "Insert into PART(Item_number,part_no,name,materials) values ('" + th + "','" + th + "','" + mc + "','" + cl + "')"
+        '' part = inn.applySQL(aml)
+        part.loadAML(aml)
+
+        ''  Dim reslultItem As Aras.IOM.Item = inn.applyMethod("jc_add_part", "<th>" + th + "</th><mc>" + mc + "</mc><cl>" + cl + "</cl>")
+
+
+        Dim result As Aras.IOM.Item = part.apply()
+        'MsgBox(th)
+
+
+        addpart = result
+
+    End Function
+
+    Private Function updatepart(ByVal th As String, ByVal mc As String, ByVal bb As String, ByVal cl As String, ByVal lx As String, ByVal isroot As Boolean) As Aras.IOM.Item
+
+        Dim part1 As Aras.IOM.Item = inn.newItem("Part", "get")
+        part1.setProperty("item_number", th)
+        Dim ps As Aras.IOM.Item = part1.apply
+        Dim p As Aras.IOM.Item = ps.getItemByIndex(0)
+
+        p.setProperty("name", mc)
+        p.setProperty("item_number", th)
+        p.setProperty("revision", bb)
+        p.setProperty("material", cl)
+        p.setProperty("type", lx)
+
+        Dim r As Aras.IOM.Item = p.apply("edit")
+        Return r
+
+
+    End Function
+
+    Private Sub addbom(ByVal p As Aras.IOM.Item, ByVal s As Aras.IOM.Item, ByVal sl As String)
+        '  MsgBox(p.getID + "|||||" + s.getID)
+        Dim boms As Aras.IOM.Item = inn.newItem
+        Dim amlstring As String = "<Item type='part BOM'  action='add' ><quantity>" + sl + "</quantity><related_id>" + s.getID() + "</related_id><source_id>" + p.getID() + "</source_id></Item>"
+
+
+        boms.loadAML(amlstring)
+        Dim result As Aras.IOM.Item
+        result = boms.apply()
+
+
+    End Sub
+    Private Function findexistpart(ByVal th As String) As Aras.IOM.Item
+        Dim part As Aras.IOM.Item = inn.newItem()
+
+        Dim amlstring As String
+        amlstring = "<Item type='Part' action='get'  select='id,item_number' ><item_number>" + th + "</item_number></Item>"
+        part.loadAML(amlstring)
+        Dim results As Aras.IOM.Item = part.apply()
+
+        Dim count As Integer = results.getItemCount()
+
+        Dim p As Aras.IOM.Item = results.getItemByIndex(0)
+
+        findexistpart = p
+    End Function
+    Private Sub delete_old_bom(ByVal p As Aras.IOM.Item)
+        Dim pm As Aras.IOM.Item = inn.newItem("Part BOM", "delete")
+        pm.setAttribute("where", "[PART_BOM].source_id='" + p.getID + "'")
+        Dim results As Aras.IOM.Item = pm.apply()
+    End Sub
+End Module

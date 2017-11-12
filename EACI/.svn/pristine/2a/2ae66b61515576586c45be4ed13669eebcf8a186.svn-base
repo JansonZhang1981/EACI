@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <startup>
+        <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.5.2" />
+    </startup>
+  <appSettings>
+    <add key="vault" value=""/>
+    <add key="server" value="http://192.168.125.118/InnovatorServer"/>
+    <add key="database" value="InnovatorSolutions"/>
+    <add key="username" value=""/>
+    <add key="password" value=""/>
+    <add key="ClientSettingsProvider.ServiceUri" value=""/>
+    <add key="LifeCycleState" value="新建"/>
+  </appSettings>
+</configuration>
